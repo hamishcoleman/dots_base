@@ -115,6 +115,10 @@ def argparser():
 def main():
     args = argparser()
 
+    if not args.command:
+        raise NotImplementedError
+        # TODO: default
+
     result = args.func(args)
     print(result)
 
