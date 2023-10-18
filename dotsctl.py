@@ -104,7 +104,7 @@ def argparser():
         dest="command",
         help="Command",
     )
-    
+
     for name, data in subc_list.items():
         func = data["func"]
         arg = False
@@ -130,6 +130,6 @@ def main():
     result = args.func(args)
     print(result)
 
+
 if __name__ == "__main__":
     main()
-
