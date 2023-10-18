@@ -3,13 +3,16 @@
 """
 #
 # :dotsctl:
-# dest: ~/bin/dotsctl
+# destdir: ~/bin/
 # dpkg:
 #   - python3-yaml
+# strip_extension: true
 # ...
 
 
 import argparse
+import glob
+import io
 import os
 import yaml
 
@@ -47,6 +50,49 @@ def _config_save(name, config):
     )
 
 
+def _source_load(filename):
+    """Open a file and look for dotsctl metadata"""
+    check_lines = 30  # basically one page
+
+    fh = open(filename)
+    line_nr = 0
+    indent = None
+
+    # Look for a metadata header line
+    # (and record its indent level)
+    while line_nr < check_lines:
+        line_nr += 1
+
+        try:
+            line = fh.readline()
+        except UnicodeDecodeError:
+            # Its not text..
+            return
+
+        try:
+            indent = line.index(":dotsctl:")
+            break
+        except ValueError:
+            continue
+
+    if indent is None:
+        # never found a header
+        return None
+
+    lines = []
+    while True:
+        line = fh.readline()[indent:].strip()
+        lines.append(line)
+        if line == "...":
+            break
+
+    metadata = yaml.safe_load(io.StringIO("\n".join(lines)))
+
+    # TODO: DIG HERE
+    print("D1", filename)
+    print("D2", metadata)
+
+
 subc_list = {}
 
 
@@ -68,7 +114,7 @@ def CLI(action, **kwargs):
 @CLI("add", arg="pathname")
 def subc_add(args):
     """Add a new file or directory to the list of managed sources"""
-    conffile = "sources.yml"
+    conffile = "sources.yml"  # FIXME dry
 
     sources = _config_load(conffile)
     for name in args.pathname:
@@ -83,7 +129,26 @@ def subc_add(args):
 @CLI("install", arg="pathname")
 def subc_install(args):
     """Install all managed sources or optionally specify just one adhoc file"""
-    raise NotImplementedError()
+    conffile = "sources.yml"  # FIXME dry
+
+    sources = {}
+    if args.pathname:
+        for n in args.pathname:
+            sources[n] = True
+    else:
+        sources = _config_load(conffile)
+
+    for source in sources:
+        if os.path.isfile(source):
+            metadata = _source_load(source)
+            # TODO: implement
+            continue
+
+        files = glob.glob(f"{source}/**", recursive=True)
+        for file in files:
+            if os.path.isfile(file):
+                metadata = _source_load(file)
+                # TODO: implement
 
 
 def argparser():
