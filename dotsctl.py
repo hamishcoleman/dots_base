@@ -47,6 +47,25 @@ def _config_save(name, config):
     )
 
 
+subc_list = {}
+
+
+def CLI(action, **kwargs):
+    def wrap(f):
+        entry = {
+            "func": f,
+            "help": f.__doc__,
+        }
+        entry.update(kwargs)
+
+        if action in subc_list:
+            raise ValueError(f"Duplicate action {action}")
+        subc_list[action] = entry
+        return f
+    return wrap
+
+
+@CLI("add", arg="pathname")
 def subc_add(args):
     """Add a new file or directory to the list of managed sources"""
     conffile = "sources.yml"
@@ -61,21 +80,10 @@ def subc_add(args):
     _config_save(conffile, sources)
 
 
+@CLI("install", arg="pathname")
 def subc_install(args):
     """Install all managed sources or optionally specify just one adhoc file"""
     raise NotImplementedError()
-
-
-subc_list = {
-    "add": {
-        "func": subc_add,
-        "arg": "pathname",
-    },
-    "install": {
-        "func": subc_install,
-        "arg": "pathname",
-    },
-}
 
 
 def argparser():
@@ -103,7 +111,7 @@ def argparser():
         if "arg" in data and data["arg"]:
             arg = data["arg"]
 
-        cmd = subc.add_parser(name, help=func.__doc__)
+        cmd = subc.add_parser(name, help=data["help"])
         cmd.set_defaults(func=func)
         if arg:
             cmd.add_argument(arg, nargs="*")
