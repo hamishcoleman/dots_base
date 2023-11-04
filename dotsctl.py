@@ -87,10 +87,102 @@ def _source_load(filename):
             break
 
     metadata = yaml.safe_load(io.StringIO("\n".join(lines)))
+    return metadata
 
-    # TODO: DIG HERE
-    print("D1", filename)
-    print("D2", metadata)
+
+def log(args, action, filename):
+    """Make a log output"""
+
+    if args.verbose:
+        print(f"{action} {filename}")
+
+
+def install_mkdir(args, mkdir):
+    """Create one or more directories"""
+
+    if isinstance(mkdir, list):
+        for i in mkdir:
+            install_mkdir(args, i)
+
+    if not isinstance(mkdir, str):
+        raise NotImplementedError
+
+    path = os.path.expanduser(mkdir)
+    if os.path.isdir(path):
+        return
+
+    log(args, "MKDIR", path)
+    os.makedirs(path, exist_ok=True)
+    return
+
+
+def install_symlink(args, target, linkpath, destdir):
+    """Install the dotfile as a symlink"""
+    install_mkdir(args, destdir)
+
+    try:
+        stat = os.lstat(linkpath)
+    except FileNotFoundError:
+        stat = None
+
+    # TOCTOU race condition!
+
+    if stat:
+        if os.path.stat.S_ISREG(stat.st_mode):
+            print(f"Error: will not overwrite regular file {linkpath}")
+            return
+        if os.path.stat.S_ISLNK(stat.st_mode):
+            orig_target = os.readlink(linkpath)
+            if orig_target == target:
+                # dont report making changes if there are none
+                return
+        else:
+            # Dont know how to handle the type we are trying to overwrite
+            raise NotImplementedError
+
+        os.unlink(linkpath)
+
+    log(args, "SYMLINK", linkpath)
+    os.symlink(target, linkpath)
+
+
+def install_one(args, filename):
+    """Find and process install instructions for one file"""
+    metadata = _source_load(filename)
+
+    if metadata is None:
+        # no install actions found
+        return None
+
+    # TODO:
+    # optionally check required packages
+    # optionally check required python libs
+
+    if "mkdir" in metadata:
+        install_mkdir(args, metadata['mkdir'])
+
+    if "destdir" in metadata:
+        # The destionation is calculated from a dir name
+        metadata["dest"] = os.path.join(
+            metadata["destdir"],
+            os.path.basename(filename)
+        )
+
+    if "dest" in metadata:
+        dest = os.path.expanduser(metadata["dest"])
+        strip_extension = metadata.get("strip_extension", False)
+        if strip_extension:
+            dest, _ = os.path.splitext(dest)
+
+        destdir = os.path.dirname(dest)
+        src_abs = os.path.abspath(filename)
+        src_rel = os.path.relpath(src_abs, destdir)
+
+        # TODO:
+        # copy to dest:  install_copy()
+        # copy to archive:  install_toarchivedir()
+
+        install_symlink(args, src_rel, dest, destdir)
 
 
 subc_list = {}
@@ -140,15 +232,15 @@ def subc_install(args):
 
     for source in sources:
         if os.path.isfile(source):
-            metadata = _source_load(source)
-            # TODO: implement
+            install_one(args, source)
             continue
 
-        files = glob.glob(f"{source}/**", recursive=True)
+        files = glob.glob(f"{source}/**", recursive=True, include_hidden=True)
         for file in files:
             if os.path.isfile(file):
-                metadata = _source_load(file)
-                # TODO: implement
+                install_one(args, file)
+
+    return ""
 
 
 def argparser():
