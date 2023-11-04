@@ -155,7 +155,6 @@ def install_one(args, filename):
 
     # TODO:
     # optionally check required packages
-    # optionally check required python libs
 
     if "mkdir" in metadata:
         install_mkdir(args, metadata['mkdir'])
@@ -169,9 +168,16 @@ def install_one(args, filename):
 
     if "dest" in metadata:
         dest = os.path.expanduser(metadata["dest"])
+        root, ext = os.path.splitext(dest)
+
+        # TODO:
+        # if find libraries is not disabled in metadata
+        # and if ext is .py
+        # introspect filename for non-packaged libs and install them too
+
         strip_extension = metadata.get("strip_extension", True)
         if strip_extension:
-            dest, _ = os.path.splitext(dest)
+            dest = root
 
         destdir = os.path.dirname(dest)
         src_abs = os.path.abspath(filename)
