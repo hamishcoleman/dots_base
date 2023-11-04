@@ -6,7 +6,6 @@
 #   destdir: ~/bin/
 #   dpkg:
 #     - python3-yaml
-#   strip_extension: true
 # ...
 
 
@@ -170,7 +169,7 @@ def install_one(args, filename):
 
     if "dest" in metadata:
         dest = os.path.expanduser(metadata["dest"])
-        strip_extension = metadata.get("strip_extension", False)
+        strip_extension = metadata.get("strip_extension", True)
         if strip_extension:
             dest, _ = os.path.splitext(dest)
 
