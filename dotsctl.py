@@ -3,10 +3,10 @@
 """
 #
 # :dotsctl:
-# destdir: ~/bin/
-# dpkg:
-#   - python3-yaml
-# strip_extension: true
+#   destdir: ~/bin/
+#   dpkg:
+#     - python3-yaml
+#   strip_extension: true
 # ...
 
 
