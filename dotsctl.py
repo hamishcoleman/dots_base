@@ -185,6 +185,27 @@ def install_one(args, filename):
         install_symlink(args, src_rel, dest, destdir)
 
 
+def sources_foreach(args, func):
+    conffile = "sources.yml"  # FIXME dry
+
+    sources = {}
+    if args.pathname:
+        for n in args.pathname:
+            sources[n] = True
+    else:
+        sources = _config_load(conffile)
+
+    for source in sources:
+        if os.path.isfile(source):
+            func(args, source)
+            continue
+
+        files = glob.glob(f"{source}/**", recursive=True, include_hidden=True)
+        for file in files:
+            if os.path.isfile(file):
+                func(args, file)
+
+
 subc_list = {}
 
 
@@ -221,25 +242,24 @@ def subc_add(args):
 @CLI("install", arg="pathname")
 def subc_install(args):
     """Install all managed sources or optionally specify just one adhoc file"""
-    conffile = "sources.yml"  # FIXME dry
+    sources_foreach(args, install_one)
+    return ""
 
-    sources = {}
-    if args.pathname:
-        for n in args.pathname:
-            sources[n] = True
-    else:
-        sources = _config_load(conffile)
 
-    for source in sources:
-        if os.path.isfile(source):
-            install_one(args, source)
-            continue
+def debug_meta(args, filename):
+    """Pretty print the metadata loaded from the file"""
+    metadata = _source_load(filename)
+    if metadata is None:
+        return
 
-        files = glob.glob(f"{source}/**", recursive=True, include_hidden=True)
-        for file in files:
-            if os.path.isfile(file):
-                install_one(args, file)
+    db = {filename: metadata}
+    print(yaml.safe_dump(db, default_flow_style=False))
 
+
+@CLI("debug_meta", arg="pathname")
+def subc_debug_meta(args):
+    """Dump the discovered metadata"""
+    sources_foreach(args, debug_meta)
     return ""
 
 
