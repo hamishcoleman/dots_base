@@ -10,6 +10,7 @@
 
 
 import argparse
+import distro
 import glob
 import io
 import os
@@ -260,6 +261,30 @@ def subc_debug_meta(args):
         print(yaml.safe_dump(db, default_flow_style=False))
 
     sources_foreach(args, debug_meta)
+
+
+@CLI("packages_list", arg="pathname")
+def subc_packages_list(args):
+    """Show the list of package names needed"""
+    if distro.id() == 'debian':
+        packages_key = "dpkg"
+    else:
+        raise NotImplementedError("Unknown distro")
+
+    def packages(args, filename, metadata):
+        return metadata.get(packages_key, None)
+
+    raw = sources_foreach(args, packages)
+    result = set()
+
+    for i in raw:
+        if i is None:
+            continue
+        if isinstance(i, list):
+            result.update(i)
+
+    for i in sorted(result):
+        print(i)
 
 
 def argparser():
