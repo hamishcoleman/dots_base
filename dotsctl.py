@@ -286,7 +286,7 @@ def argparser():
         help="Command",
     )
 
-    for name, data in subc_list.items():
+    for name, data in sorted(subc_list.items()):
         func = data["func"]
         arg = False
         if "arg" in data and data["arg"]:
