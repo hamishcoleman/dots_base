@@ -103,6 +103,7 @@ def install_mkdir(args, mkdir):
     if isinstance(mkdir, list):
         for i in mkdir:
             install_mkdir(args, i)
+        return
 
     if not isinstance(mkdir, str):
         raise NotImplementedError("Bad mkdirs metadata")
