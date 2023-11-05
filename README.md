@@ -4,19 +4,18 @@ Tools for managing dots files and keeping them in repositories
 
 Registers source dotfile locations and installs them into the environment.
 
-First, prep your dotfiles with some metadata.  eg:
+The tool will look in the first 30 lines of each source file for a marker
+string. (See the end of this file for an example)
 
-```
-#!/blah
-#
-# :dotsctl:
-#   destdir: ~/bin/
-# ...
-```
+This string is both used to define the beginning of a metadata block and to
+determine how many leading characters to delete from each line in the metadata
+block.  This is a way to support the comment characters used in multiple
+different languages and config file formats without explicitly coding for it.
 
-The tool will look in the first page of code for the marker `:dotsctl:` and
-use that to determine how many leading characters to remove.  All lines from
-that point until the finishing `...` marker are then loaded as  YAML metadata.
+The end of the metadata block is a correctly indented `...`
+
+Once the whole metadata block has been extracted and unindented, it is
+interpreted as YAML.
 
 possible keys include:
 
@@ -44,3 +43,16 @@ Usage:
 
 `dotsctl install`
 - Looks through all the registered sources and installs anything found
+
+# Example metadata block
+
+(Located at the end of the file to avoid this file being detected by the
+dotsctl system)
+
+```
+#!/blah
+#
+# :dotsctl:
+#   destdir: ~/bin/
+# ...
+```
