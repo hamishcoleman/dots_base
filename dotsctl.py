@@ -145,9 +145,8 @@ def install_symlink(args, target, linkpath, destdir):
     os.symlink(target, linkpath)
 
 
-def install_one(args, filename):
+def install_one(args, filename, metadata):
     """Find and process install instructions for one file"""
-    metadata = _source_load(filename)
 
     if metadata is None:
         # no install actions found
@@ -202,13 +201,15 @@ def sources_foreach(args, func):
 
     for source in sources:
         if os.path.isfile(source):
-            func(args, source)
+            metadata = _source_load(source)
+            func(args, source, metadata)
             continue
 
         files = glob.glob(f"{source}/**", recursive=True, include_hidden=True)
         for file in files:
             if os.path.isfile(file):
-                func(args, file)
+                metadata = _source_load(file)
+                func(args, file, metadata)
 
 
 subc_list = {}
@@ -251,9 +252,8 @@ def subc_install(args):
     return ""
 
 
-def debug_meta(args, filename):
+def debug_meta(args, filename, metadata):
     """Pretty print the metadata loaded from the file"""
-    metadata = _source_load(filename)
     if metadata is None:
         return
 
