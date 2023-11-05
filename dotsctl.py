@@ -249,7 +249,6 @@ def subc_add(args):
 def subc_install(args):
     """Install all managed sources or optionally specify just one adhoc file"""
     sources_foreach(args, install_one)
-    return ""
 
 
 @CLI("debug_meta", arg="pathname")
@@ -261,7 +260,6 @@ def subc_debug_meta(args):
         print(yaml.safe_dump(db, default_flow_style=False))
 
     sources_foreach(args, debug_meta)
-    return ""
 
 
 def argparser():
@@ -306,7 +304,8 @@ def main():
         # TODO: default
 
     result = args.func(args)
-    print(result)
+    if result is not None:
+        print(result)
 
 
 if __name__ == "__main__":
