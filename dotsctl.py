@@ -104,7 +104,7 @@ def install_mkdir(args, mkdir):
             install_mkdir(args, i)
 
     if not isinstance(mkdir, str):
-        raise NotImplementedError
+        raise NotImplementedError("Bad mkdirs metadata")
 
     path = os.path.expanduser(mkdir)
     if os.path.isdir(path):
@@ -137,7 +137,7 @@ def install_symlink(args, target, linkpath, destdir):
                 return
         else:
             # Dont know how to handle the type we are trying to overwrite
-            raise NotImplementedError
+            raise NotImplementedError("Unknown existing file type")
 
         os.unlink(linkpath)
 
@@ -305,7 +305,7 @@ def main():
     args = argparser()
 
     if not args.command:
-        raise NotImplementedError
+        raise NotImplementedError("No default subcommand")
         # TODO: default
 
     result = args.func(args)
