@@ -148,10 +148,6 @@ def install_symlink(args, target, linkpath, destdir):
 def install_one(args, filename, metadata):
     """Find and process install instructions for one file"""
 
-    if metadata is None:
-        # no install actions found
-        return None
-
     # TODO:
     # optionally check required packages
 
@@ -192,6 +188,7 @@ def install_one(args, filename, metadata):
 def sources_foreach(args, func):
     conffile = "sources.yml"  # FIXME dry
 
+    result = []
     sources = {}
     if args.pathname:
         for n in args.pathname:
@@ -202,14 +199,17 @@ def sources_foreach(args, func):
     for source in sources:
         if os.path.isfile(source):
             metadata = _source_load(source)
-            func(args, source, metadata)
+            if metadata is not None:
+                result.append(func(args, source, metadata))
             continue
 
         files = glob.glob(f"{source}/**", recursive=True, include_hidden=True)
         for file in files:
             if os.path.isfile(file):
                 metadata = _source_load(file)
-                func(args, file, metadata)
+                if metadata is not None:
+                    result.append(func(args, file, metadata))
+    return result
 
 
 subc_list = {}
@@ -257,9 +257,6 @@ def subc_debug_meta(args):
     """Dump the discovered metadata"""
     def debug_meta(args, filename, metadata):
         """Pretty print the metadata loaded from the file"""
-        if metadata is None:
-            return
-
         db = {filename: metadata}
         print(yaml.safe_dump(db, default_flow_style=False))
 
