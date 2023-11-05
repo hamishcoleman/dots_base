@@ -252,18 +252,17 @@ def subc_install(args):
     return ""
 
 
-def debug_meta(args, filename, metadata):
-    """Pretty print the metadata loaded from the file"""
-    if metadata is None:
-        return
-
-    db = {filename: metadata}
-    print(yaml.safe_dump(db, default_flow_style=False))
-
-
 @CLI("debug_meta", arg="pathname")
 def subc_debug_meta(args):
     """Dump the discovered metadata"""
+    def debug_meta(args, filename, metadata):
+        """Pretty print the metadata loaded from the file"""
+        if metadata is None:
+            return
+
+        db = {filename: metadata}
+        print(yaml.safe_dump(db, default_flow_style=False))
+
     sources_foreach(args, debug_meta)
     return ""
 
