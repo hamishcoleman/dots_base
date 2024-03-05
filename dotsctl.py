@@ -157,7 +157,7 @@ def install_one(args, filename, metadata):
         install_mkdir(args, metadata['mkdir'])
 
     if "destdir" in metadata:
-        # The destionation is calculated from a dir name
+        # The destination is calculated from a dir name
         metadata["dest"] = os.path.join(
             metadata["destdir"],
             os.path.basename(filename)
@@ -172,7 +172,11 @@ def install_one(args, filename, metadata):
         # and if ext is .py
         # introspect filename for non-packaged libs and install them too
 
-        strip_extension = metadata.get("strip_extension", True)
+        strip_extension = False
+        if ext in [".py"]:
+            strip_extension = True
+
+        strip_extension = metadata.get("strip_extension", strip_extension)
         if strip_extension:
             dest = root
 
