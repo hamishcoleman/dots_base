@@ -81,7 +81,7 @@ def _source_load(filename):
 
     lines = []
     while True:
-        line = fh.readline()[indent:].strip()
+        line = fh.readline()[indent:].rstrip()
         lines.append(line)
         if line == "...":
             break
