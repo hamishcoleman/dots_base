@@ -117,8 +117,9 @@ def install_mkdir(mkdir):
     return
 
 
-def install_symlink(target, linkpath, destdir):
+def install_symlink(target, linkpath):
     """Install the dotfile as a symlink"""
+    destdir = os.path.dirname(linkpath)
     install_mkdir(destdir)
 
     try:
