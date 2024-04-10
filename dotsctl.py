@@ -194,7 +194,7 @@ def install_one(args, filename, metadata):
 def sources_foreach(args, func):
     conffile = "sources.yml"  # FIXME dry
 
-    result = []
+    data = {}
     sources = {}
     if args.pathname:
         for n in args.pathname:
@@ -205,16 +205,26 @@ def sources_foreach(args, func):
     for source in sources:
         if os.path.isfile(source):
             metadata = _source_load(source)
-            if metadata is not None:
-                result.append(func(args, source, metadata))
+            if metadata is None:
+                continue
+            if source in data:
+                raise ValueError(f"Multiple source loads ({source})")
+            data[source] = metadata
             continue
 
         files = glob.glob(f"{source}/**", recursive=True, include_hidden=True)
         for file in files:
             if os.path.isfile(file):
                 metadata = _source_load(file)
-                if metadata is not None:
-                    result.append(func(args, file, metadata))
+                if metadata is None:
+                    continue
+                if file in data:
+                    raise ValueError(f"Multiple source loads ({file})")
+                data[file] = metadata
+
+    result = []
+    for source in sorted(data):
+        result.append(func(args, source, data[source]))
     return result
 
 
