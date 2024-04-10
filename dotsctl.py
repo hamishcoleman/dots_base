@@ -89,20 +89,20 @@ def _source_load(filename):
     metadata = yaml.safe_load(io.StringIO("\n".join(lines)))
     return metadata
 
-
-def log(args, action, filename):
+log_verbose = False
+def log(action, filename):
     """Make a log output"""
-
-    if args.verbose:
+    global log_verbose
+    if log_verbose:
         print(f"{action} {filename}")
 
 
-def install_mkdir(args, mkdir):
+def install_mkdir(mkdir):
     """Create one or more directories"""
 
     if isinstance(mkdir, list):
         for i in mkdir:
-            install_mkdir(args, i)
+            install_mkdir(i)
         return
 
     if not isinstance(mkdir, str):
@@ -112,14 +112,14 @@ def install_mkdir(args, mkdir):
     if os.path.isdir(path):
         return
 
-    log(args, "MKDIR", path)
+    log("MKDIR", path)
     os.makedirs(path, exist_ok=True)
     return
 
 
-def install_symlink(args, target, linkpath, destdir):
+def install_symlink(target, linkpath, destdir):
     """Install the dotfile as a symlink"""
-    install_mkdir(args, destdir)
+    install_mkdir(destdir)
 
     try:
         stat = os.lstat(linkpath)
@@ -143,7 +143,7 @@ def install_symlink(args, target, linkpath, destdir):
 
         os.unlink(linkpath)
 
-    log(args, "SYMLINK", linkpath)
+    log("SYMLINK", linkpath)
     os.symlink(target, linkpath)
 
 
@@ -154,7 +154,7 @@ def install_one(args, filename, metadata):
     # optionally check required packages
 
     if "mkdir" in metadata:
-        install_mkdir(args, metadata['mkdir'])
+        install_mkdir(metadata['mkdir'])
 
     if "destdir" in metadata:
         # The destination is calculated from a dir name
@@ -188,7 +188,7 @@ def install_one(args, filename, metadata):
         # copy to dest:  install_copy()
         # copy to archive:  install_toarchivedir()
 
-        install_symlink(args, src_rel, dest, destdir)
+        install_symlink(src_rel, dest)
 
 
 def sources_foreach(args, func):
@@ -338,6 +338,9 @@ def argparser():
 
 def main():
     args = argparser()
+    if args.verbose:
+        global log_verbose
+        log_verbose = True
 
     if not args.command:
         raise NotImplementedError("No default subcommand")
