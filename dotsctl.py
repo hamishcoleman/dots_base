@@ -120,7 +120,7 @@ def install_mkdir(mkdir):
     return
 
 
-def install_symlink(target, linkpath):
+def install_symlink_one(target, linkpath):
     """Install the dotfile as a symlink"""
     destdir = os.path.dirname(linkpath)
     install_mkdir(destdir)
@@ -151,6 +151,13 @@ def install_symlink(target, linkpath):
     os.symlink(target, linkpath)
 
 
+def install_symlink(data):
+    """Create one or more symlinks from a dict of dest: target pairs"""
+    for linkpath, target in data.items():
+        linkpath = os.path.expanduser(linkpath)
+        install_symlink_one(target, linkpath)
+
+
 def install_one(args, filename, metadata):
     """Find and process install instructions for one file"""
 
@@ -159,6 +166,10 @@ def install_one(args, filename, metadata):
 
     if "mkdir" in metadata:
         install_mkdir(metadata['mkdir'])
+
+    if "symlink" in metadata:
+        # Install a generic symlink, unrelated to the current filename
+        install_symlink(metadata["symlink"])
 
     if "destdir" in metadata:
         # The destination is calculated from a dir name
@@ -192,7 +203,7 @@ def install_one(args, filename, metadata):
         # copy to dest:  install_copy()
         # copy to archive:  install_toarchivedir()
 
-        install_symlink(src_rel, dest)
+        install_symlink_one(src_rel, dest)
 
 
 def sources_foreach(args, func):
