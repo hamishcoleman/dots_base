@@ -89,7 +89,10 @@ def _source_load(filename):
     metadata = yaml.safe_load(io.StringIO("\n".join(lines)))
     return metadata
 
+
 log_verbose = False
+
+
 def log(action, filename):
     """Make a log output"""
     global log_verbose
