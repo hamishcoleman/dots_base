@@ -308,6 +308,9 @@ def subc_packages_list(args):
     """Show the list of package names needed"""
     if distro.id() == 'debian':
         packages_key = "dpkg"
+    elif distro.id() == 'raspbian':
+        # Gah, this is much annoyance
+        packages_key = "dpkg"
     else:
         raise NotImplementedError("Unknown distro")
 
