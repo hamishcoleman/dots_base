@@ -17,6 +17,15 @@ import os
 import yaml
 
 
+# Hack to support using this on python versions too old to include the
+# glob.glob() include_hidden=True option
+def _ishidden(pattern):
+    return False
+
+
+glob._ishidden = _ishidden
+
+
 def _config_home():
     """Calculate our config_home"""
     xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
@@ -227,7 +236,8 @@ def sources_foreach(args, func):
             data[source] = metadata
             continue
 
-        files = glob.glob(f"{source}/**", recursive=True, include_hidden=True)
+        # With newer python, include_hidden=True
+        files = glob.glob(f"{source}/**", recursive=True)
         for file in files:
             if os.path.isfile(file):
                 metadata = _source_load(file)
