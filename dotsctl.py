@@ -187,6 +187,11 @@ def install_one(args, filename, metadata):
             os.path.basename(filename)
         )
 
+    if "dotsctl" in metadata:
+        basedir = os.path.dirname(filename)
+        for this_name, this_meta in sorted(metadata["dotsctl"].items()):
+            install_one(args, os.path.join(basedir, this_name), this_meta)
+
     if "dest" in metadata:
         dest = os.path.expanduser(metadata["dest"])
         root, ext = os.path.splitext(dest)
