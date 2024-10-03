@@ -111,28 +111,34 @@ def log(action, filename):
 
 def install_mkdir(mkdir):
     """Create one or more directories"""
+    actions = []
 
     if isinstance(mkdir, list):
         for i in mkdir:
-            install_mkdir(i)
-        return
+            actions += install_mkdir(i)
+        return actions
 
     if not isinstance(mkdir, str):
         raise NotImplementedError("Bad mkdirs metadata")
 
     path = os.path.expanduser(mkdir)
+    actions += [("MKDIR", path)]
+
+    # Skip printing the log message if the path exists
     if os.path.isdir(path):
-        return
+        return actions
 
     log("MKDIR", path)
     os.makedirs(path, exist_ok=True)
-    return
+    return actions
 
 
 def install_symlink_one(target, linkpath):
     """Install the dotfile as a symlink"""
+    actions = []
     destdir = os.path.dirname(linkpath)
-    install_mkdir(destdir)
+    actions += install_mkdir(destdir)
+    actions += [("SYMLINK", target, linkpath)]
 
     try:
         stat = os.lstat(linkpath)
@@ -144,12 +150,12 @@ def install_symlink_one(target, linkpath):
     if stat:
         if os.path.stat.S_ISREG(stat.st_mode):
             print(f"Error: will not overwrite regular file {linkpath}")
-            return
+            return actions
         if os.path.stat.S_ISLNK(stat.st_mode):
             orig_target = os.readlink(linkpath)
             if orig_target == target:
                 # dont report making changes if there are none
-                return
+                return actions
         else:
             # Dont know how to handle the type we are trying to overwrite
             raise NotImplementedError("Unknown existing file type")
@@ -158,27 +164,32 @@ def install_symlink_one(target, linkpath):
 
     log("SYMLINK", linkpath)
     os.symlink(target, linkpath)
+    return actions
 
 
 def install_symlink(data):
     """Create one or more symlinks from a dict of dest: target pairs"""
+    actions = []
     for linkpath, target in data.items():
         linkpath = os.path.expanduser(linkpath)
-        install_symlink_one(target, linkpath)
+        actions += install_symlink_one(target, linkpath)
+    return actions
 
 
 def install_one(args, filename, metadata):
     """Find and process install instructions for one file"""
 
+    actions = []
+
     # TODO:
     # optionally check required packages
 
     if "mkdir" in metadata:
-        install_mkdir(metadata['mkdir'])
+        actions += install_mkdir(metadata['mkdir'])
 
     if "symlink" in metadata:
         # Install a generic symlink, unrelated to the current filename
-        install_symlink(metadata["symlink"])
+        actions += install_symlink(metadata["symlink"])
 
     if "destdir" in metadata:
         # The destination is calculated from a dir name
@@ -190,7 +201,11 @@ def install_one(args, filename, metadata):
     if "dotsctl" in metadata:
         basedir = os.path.dirname(filename)
         for this_name, this_meta in sorted(metadata["dotsctl"].items()):
-            install_one(args, os.path.join(basedir, this_name), this_meta)
+            actions += install_one(
+                args,
+                os.path.join(basedir, this_name),
+                this_meta
+            )
 
     if "dest" in metadata:
         dest = os.path.expanduser(metadata["dest"])
@@ -217,7 +232,9 @@ def install_one(args, filename, metadata):
         # copy to dest:  install_copy()
         # copy to archive:  install_toarchivedir()
 
-        install_symlink_one(src_rel, dest)
+        actions += install_symlink_one(src_rel, dest)
+
+    return actions
 
 
 def sources_foreach(args, func):
@@ -294,7 +311,10 @@ def subc_add(args):
 @CLI("install", arg="pathname")
 def subc_install(args):
     """Install all managed sources or optionally specify just one adhoc file"""
-    sources_foreach(args, install_one)
+    actions = sources_foreach(args, install_one)
+
+    if args.verbose:
+        print(yaml.safe_dump(actions, default_flow_style=False))
 
 
 @CLI("debug_meta", arg="pathname")
