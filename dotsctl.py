@@ -313,7 +313,7 @@ def subc_install(args):
     """Install all managed sources or optionally specify just one adhoc file"""
     actions = sources_foreach(args, install_one)
 
-    if args.verbose:
+    if args.debug:
         print(yaml.safe_dump(actions, default_flow_style=False))
 
 
@@ -360,6 +360,11 @@ def argparser():
         description=globals()["__doc__"],
     )
 
+    args.add_argument(
+        "--debug",
+        action='store_true', default=False,
+        help="Set debug output",
+    )
     args.add_argument(
         "-v", "--verbose",
         action='store_true', default=False,
