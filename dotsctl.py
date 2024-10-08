@@ -8,6 +8,10 @@
 #     - python3-yaml
 # ...
 
+# TODO:
+# - keep track of installed symlinks, remove the dest if the source is
+#   no longer managed
+# - Implement tagging to filter installed things
 
 import argparse
 import distro
