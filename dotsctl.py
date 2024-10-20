@@ -245,6 +245,16 @@ def sources_foreach(args, func):
     conffile = "sources.yml"  # FIXME dry
 
     data = {}
+
+    def source_append(filename):
+        """Trys to add dots data from filename"""
+        if filename in data:
+            raise ValueError(f"Multiple sources load same ({source})")
+        metadata = _source_load(filename)
+        if metadata is None:
+            return
+        data[filename] = metadata
+
     sources = {}
     if args.pathname:
         for n in args.pathname:
@@ -254,24 +264,14 @@ def sources_foreach(args, func):
 
     for source in sources:
         if os.path.isfile(source):
-            metadata = _source_load(source)
-            if metadata is None:
-                continue
-            if source in data:
-                raise ValueError(f"Multiple source loads ({source})")
-            data[source] = metadata
+            source_append(source)
             continue
 
         # With newer python, include_hidden=True
         files = glob.glob(f"{source}/**", recursive=True)
         for file in files:
             if os.path.isfile(file):
-                metadata = _source_load(file)
-                if metadata is None:
-                    continue
-                if file in data:
-                    raise ValueError(f"Multiple source loads ({file})")
-                data[file] = metadata
+                source_append(file)
 
     result = []
     for source in sorted(data):
