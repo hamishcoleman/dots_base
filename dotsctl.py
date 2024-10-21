@@ -103,6 +103,36 @@ def _source_load(filename):
     return metadata
 
 
+class ActionBase:
+    def __str__(self):
+        raise NotImplementedError()
+
+
+class ActionSource(ActionBase):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __str__(self):
+        return f"# source {self.filename}"
+
+
+class ActionMkdir(ActionBase):
+    def __init__(self, directory):
+        self.directory = directory
+
+    def __str__(self):
+        return f"mkdir -p {self.directory}"
+
+
+class ActionSymlink(ActionBase):
+    def __init__(self, target, link_name):
+        self.target = target
+        self.link_name = link_name
+
+    def __str__(self):
+        return f"ln -s {self.target} {self.link_name}"
+
+
 log_verbose = False
 
 
@@ -126,7 +156,7 @@ def install_mkdir(mkdir):
         raise NotImplementedError("Bad mkdirs metadata")
 
     path = os.path.expanduser(mkdir)
-    actions += [("MKDIR", path)]
+    actions += [ActionMkdir(path)]
 
     # Skip printing the log message if the path exists
     if os.path.isdir(path):
@@ -142,7 +172,7 @@ def install_symlink_one(target, linkpath):
     actions = []
     destdir = os.path.dirname(linkpath)
     actions += install_mkdir(destdir)
-    actions += [("SYMLINK", target, linkpath)]
+    actions += [ActionSymlink(target, linkpath)]
 
     try:
         stat = os.lstat(linkpath)
@@ -275,7 +305,8 @@ def sources_foreach(args, func):
 
     result = []
     for source in sorted(data):
-        result.append(func(args, source, data[source]))
+        result += [ActionSource(source)]
+        result += (func(args, source, data[source]))
     return result
 
 
@@ -318,7 +349,8 @@ def subc_install(args):
     actions = sources_foreach(args, install_one)
 
     if args.debug:
-        print(yaml.safe_dump(actions, default_flow_style=False))
+        for action in actions:
+            print(action)
 
 
 @CLI("debug_meta", arg="pathname")
