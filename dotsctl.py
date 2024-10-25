@@ -227,10 +227,18 @@ def install_one(args, filename, metadata):
 
     if "destdir" in metadata:
         # The destination is calculated from a dir name
-        metadata["dest"] = os.path.join(
-            metadata["destdir"],
-            os.path.basename(filename)
-        )
+        if isinstance(metadata["destdir"], str):
+            metadata["destdir"] = [metadata["destdir"]]
+
+        dest = []
+        for destdir in metadata["destdir"]:
+            dest.append(
+                os.path.join(
+                    destdir,
+                    os.path.basename(filename)
+                )
+            )
+        metadata["dest"] = dest
 
     if "dotsctl" in metadata:
         basedir = os.path.dirname(filename)
@@ -242,31 +250,35 @@ def install_one(args, filename, metadata):
             )
 
     if "dest" in metadata:
-        dest = os.path.expanduser(metadata["dest"])
-        root, ext = os.path.splitext(dest)
+        if isinstance(metadata["dest"], str):
+            metadata["dest"] = [metadata["dest"]]
 
-        # TODO:
-        # if find libraries is not disabled in metadata
-        # and if ext is .py
-        # introspect filename for non-packaged libs and install them too
+        for dest in metadata["dest"]:
+            dest = os.path.expanduser(dest)
+            root, ext = os.path.splitext(dest)
 
-        strip_extension = False
-        if ext in [".py"]:
-            strip_extension = True
+            # TODO:
+            # if find libraries is not disabled in metadata
+            # and if ext is .py
+            # introspect filename for non-packaged libs and install them too
 
-        strip_extension = metadata.get("strip_extension", strip_extension)
-        if strip_extension:
-            dest = root
+            strip_extension = False
+            if ext in [".py"]:
+                strip_extension = True
 
-        destdir = os.path.dirname(dest)
-        src_abs = os.path.abspath(filename)
-        src_rel = os.path.relpath(src_abs, destdir)
+            strip_extension = metadata.get("strip_extension", strip_extension)
+            if strip_extension:
+                dest = root
 
-        # TODO:
-        # copy to dest:  install_copy()
-        # copy to archive:  install_toarchivedir()
+            destdir = os.path.dirname(dest)
+            src_abs = os.path.abspath(filename)
+            src_rel = os.path.relpath(src_abs, destdir)
 
-        actions += install_symlink_one(src_rel, dest)
+            # TODO:
+            # copy to dest:  install_copy()
+            # copy to archive:  install_toarchivedir()
+
+            actions += install_symlink_one(src_rel, dest)
 
     return actions
 
