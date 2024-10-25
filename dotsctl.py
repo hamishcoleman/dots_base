@@ -161,6 +161,8 @@ def install_mkdir(mkdir):
     # Skip printing the log message if the path exists
     if os.path.isdir(path):
         return actions
+    if os.path.exists(path):
+        raise ValueError(f"Path exists and is not a dir: {path}")
 
     log("MKDIR", path)
     os.makedirs(path, exist_ok=True)
