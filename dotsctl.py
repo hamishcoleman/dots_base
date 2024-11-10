@@ -116,14 +116,6 @@ class ActionSource(ActionBase):
         return f"# source {self.filename}"
 
 
-class ActionPackage(ActionBase):
-    def __init__(self, package):
-        self.package = package
-
-    def __str__(self):
-        return f"# apt-get -y install {self.package}"
-
-
 class ActionMkdir(ActionBase):
     def __init__(self, directory):
         self.directory = directory
@@ -327,10 +319,8 @@ def sources_foreach(args, func):
 
     result = []
     for source in sorted(data):
-        result.append(ActionSource(source))
-        f = func(args, source, data[source])
-        if f is not None:
-            result += (func(args, source, data[source]))
+        result += [ActionSource(source)]
+        result += (func(args, source, data[source]))
     return result
 
 
@@ -400,17 +390,7 @@ def subc_packages_list(args):
         raise NotImplementedError("Unknown distro")
 
     def packages(args, filename, metadata):
-        if packages_key not in metadata:
-            return None
-        packages = metadata[packages_key]
-        if packages is None:
-            return None
-
-        actions = []
-        for package in packages:
-            actions.append(ActionPackage(package))
-
-        return actions
+        return metadata.get(packages_key, None)
 
     raw = sources_foreach(args, packages)
     result = set()
@@ -418,8 +398,8 @@ def subc_packages_list(args):
     for i in raw:
         if i is None:
             continue
-        if isinstance(i, ActionPackage):
-            result.add(i.package)
+        if isinstance(i, list):
+            result.update(i)
 
     for i in sorted(result):
         print(i)

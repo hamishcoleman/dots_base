@@ -19,16 +19,15 @@ interpreted as YAML.
 
 possible keys include:
 
-mkdir:
-- a list of directories that this file needs
-dest:
-- the full path that this file should be installed to
-destdir:
-- the basename of this file will be appended to this dest dir to create the
-  path that the file should be installed to
-strip_extension:
-- defaults to True, but can be set to False to disable stripping any extension
-  when installing files
+key     | Description
+------- | -----------
+mkdir:  | a string or a list of directories to make
+symlink:| a dictionary of symlinks to create
+dest:   | the full path that this file should be installed to
+destdir:| the basename of the containing file will be appended to this dest dir to create the path that the file should be installed to
+strip_extension: | defaults to True, but can be set to False to disable stripping any extension when installing files
+dotsctl:| a dict of faked "filenames" and their dotsctl info to install
+dpkg:   | A list of debian package names that this file needs
 
 Usage:
 
