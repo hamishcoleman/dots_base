@@ -317,11 +317,14 @@ def sources_foreach(args, func):
             if os.path.isfile(file):
                 source_append(file)
 
-    result = []
+    results = []
     for source in sorted(data):
-        result += [ActionSource(source)]
-        result += (func(args, source, data[source]))
-    return result
+        results += [ActionSource(source)]
+
+        this_result = (func(args, source, data[source]))
+        if this_result is not None:
+            results += this_result
+    return results
 
 
 subc_list = {}
@@ -398,8 +401,8 @@ def subc_packages_list(args):
     for i in raw:
         if i is None:
             continue
-        if isinstance(i, list):
-            result.update(i)
+        if isinstance(i, str):
+            result.add(i)
 
     for i in sorted(result):
         print(i)
