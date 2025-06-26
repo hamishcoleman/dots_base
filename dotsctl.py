@@ -67,6 +67,10 @@ def _source_load(filename):
     """Open a file and look for dotsctl metadata"""
     check_lines = 30  # basically one page
 
+    if os.path.islink(filename):
+        # Avoid recursion
+        return None
+
     fh = open(filename)
     line_nr = 0
     indent = None
