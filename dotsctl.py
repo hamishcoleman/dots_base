@@ -6,6 +6,7 @@
 #   destdir: ~/bin/
 #   dpkg:
 #     - python3-yaml
+#     - python3-distro
 # ...
 
 # TODO:
@@ -14,7 +15,6 @@
 # - Implement tagging to filter installed things
 
 import argparse
-import distro
 import glob
 import io
 import os
@@ -388,13 +388,20 @@ def subc_debug_meta(args):
 @CLI("packages_list", arg="pathname")
 def subc_packages_list(args):
     """Show the list of package names needed"""
-    if distro.id() == 'debian':
-        packages_key = "dpkg"
-    elif distro.id() == 'raspbian':
-        # Gah, this is much annoyance
-        packages_key = "dpkg"
-    else:
-        raise NotImplementedError("Unknown distro")
+    try:
+        import distro
+
+        if distro.id() == 'debian':
+            packages_key = "dpkg"
+        elif distro.id() == 'raspbian':
+            # Gah, this is much annoyance
+            packages_key = "dpkg"
+        else:
+            raise NotImplementedError("Unknown distro")
+
+    except ModuleNotFoundError:
+        # just guess then
+        package_key = "dpkg"
 
     def packages(args, filename, metadata):
         return metadata.get(packages_key, None)
