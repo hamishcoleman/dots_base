@@ -401,7 +401,7 @@ def subc_packages_list(args):
 
     except ModuleNotFoundError:
         # just guess then
-        package_key = "dpkg"
+        packages_key = "dpkg"
 
     def packages(args, filename, metadata):
         return metadata.get(packages_key, None)
