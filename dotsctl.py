@@ -278,7 +278,11 @@ def install_one(args, filename, metadata):
 
             destdir = os.path.dirname(dest)
             src_abs = os.path.abspath(filename)
-            src_rel = os.path.relpath(src_abs, destdir)
+
+            if args.relpath:
+                src_rel = os.path.relpath(src_abs, destdir)
+            else:
+                src_rel = src_abs
 
             # TODO:
             # copy to dest:  install_copy()
@@ -455,6 +459,13 @@ def argparser():
             cmd.add_argument(arg, nargs="*")
 
     r = args.parse_args()
+
+    if "TERMUX_VERSION" in os.environ:
+        # Termux is a very annoying environment
+        r.relpath = False
+    else:
+        r.relpath = True
+
     return r
 
 
