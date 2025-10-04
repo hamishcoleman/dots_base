@@ -110,17 +110,10 @@ def _source_load(filename):
     return metadata
 
 
-log_verbose = False
-
-
-def log(action, filename):
-    """Make a log output"""
-    global log_verbose
-    if log_verbose:
-        print(f"{action} {filename}")
-
-
 class ActionBase:
+    def __init__(self):
+        self.verbose = False
+
     def __str__(self):
         raise NotImplementedError()
 
@@ -132,17 +125,28 @@ class ActionBase:
     def from_metadata(cls, metadata):
         raise NotImplementedError()
 
+    def log(self, filename):
+        if self.verbose:
+            print(f"{self.name} {filename}")
+
 
 class ActionSource(ActionBase):
     def __init__(self, filename):
+        super().__init__()
         self.filename = filename
 
     def __str__(self):
         return f"# source {self.filename}"
 
+    def log(self, filename):
+        pass
+
 
 class ActionMkdir(ActionBase):
+    name = "MKDIR"
+
     def __init__(self, directory):
+        super().__init__()
         self.directory = os.path.expanduser(directory)
 
     def __str__(self):
@@ -154,7 +158,7 @@ class ActionMkdir(ActionBase):
             return
         if os.path.exists(self.directory):
             raise ValueError(f"Path exists and is not a dir: {self.directory}")
-        log("MKDIR", self.directory)
+        self.log(self.directory)
         os.makedirs(self.directory, exist_ok=True)
 
     @classmethod
@@ -170,7 +174,10 @@ class ActionMkdir(ActionBase):
 
 
 class ActionSymlink(ActionBase):
+    name = "SYMLINK"
+
     def __init__(self, target, link_name):
+        super().__init__()
         self.target = target
         self.link_name = os.path.expanduser(link_name)
 
@@ -200,7 +207,7 @@ class ActionSymlink(ActionBase):
 
             os.unlink(self.link_name)
 
-        log("SYMLINK", self.link_name)
+        self.log(self.link_name)
         os.symlink(self.target, self.link_name)
 
     @classmethod
@@ -373,7 +380,11 @@ def subc_install(args):
     actions = sources_foreach(args, parse_metadata)
 
     for action in actions:
+        if args.verbose:
+            action.verbose = True
+
         action.act()
+
     if args.debug:
         for action in actions:
             print(action)
@@ -472,9 +483,6 @@ def argparser():
 
 def main():
     args = argparser()
-    if args.verbose:
-        global log_verbose
-        log_verbose = True
 
     if not args.command:
         raise NotImplementedError("No default subcommand")
