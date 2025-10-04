@@ -136,7 +136,7 @@ class ActionSource(ActionBase):
         self.filename = filename
 
     def __str__(self):
-        return f"# source {self.filename}"
+        return f"# dotsctl install {self.filename}"
 
 
 class ActionDpkg(ActionBase):
