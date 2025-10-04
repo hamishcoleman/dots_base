@@ -110,8 +110,26 @@ def _source_load(filename):
     return metadata
 
 
+log_verbose = False
+
+
+def log(action, filename):
+    """Make a log output"""
+    global log_verbose
+    if log_verbose:
+        print(f"{action} {filename}")
+
+
 class ActionBase:
     def __str__(self):
+        raise NotImplementedError()
+
+    def act(self):
+        # default to taking no action
+        pass
+
+    @classmethod
+    def from_metadata(cls, metadata):
         raise NotImplementedError()
 
 
@@ -125,10 +143,30 @@ class ActionSource(ActionBase):
 
 class ActionMkdir(ActionBase):
     def __init__(self, directory):
-        self.directory = directory
+        self.directory = os.path.expanduser(directory)
 
     def __str__(self):
         return f"mkdir -p {self.directory}"
+
+    def act(self):
+        # Dont take any action if the path already exists
+        if os.path.isdir(self.directory):
+            return
+        if os.path.exists(self.directory):
+            raise ValueError(f"Path exists and is not a dir: {self.directory}")
+        log("MKDIR", self.directory)
+        os.makedirs(self.directory, exist_ok=True)
+
+    @classmethod
+    def from_metadata(cls, metadata):
+        if not isinstance(metadata, list):
+            metadata = [metadata]
+
+        actions = []
+        for path in metadata:
+            actions += [cls(path)]
+
+        return actions
 
 
 class ActionSymlink(ActionBase):
@@ -140,39 +178,12 @@ class ActionSymlink(ActionBase):
         return f"ln -s {self.target} {self.link_name}"
 
 
-log_verbose = False
-
-
-def log(action, filename):
-    """Make a log output"""
-    global log_verbose
-    if log_verbose:
-        print(f"{action} {filename}")
-
-
-def install_mkdir(mkdir):
+def install_mkdir(metadata):
     """Create one or more directories"""
-    actions = []
 
-    if isinstance(mkdir, list):
-        for i in mkdir:
-            actions += install_mkdir(i)
-        return actions
-
-    if not isinstance(mkdir, str):
-        raise NotImplementedError("Bad mkdirs metadata")
-
-    path = os.path.expanduser(mkdir)
-    actions += [ActionMkdir(path)]
-
-    # Skip printing the log message if the path exists
-    if os.path.isdir(path):
-        return actions
-    if os.path.exists(path):
-        raise ValueError(f"Path exists and is not a dir: {path}")
-
-    log("MKDIR", path)
-    os.makedirs(path, exist_ok=True)
+    actions = ActionMkdir.from_metadata(metadata)
+    for action in actions:
+        action.act()
     return actions
 
 
