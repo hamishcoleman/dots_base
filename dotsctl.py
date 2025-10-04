@@ -30,37 +30,40 @@ def _ishidden(pattern):
 glob._ishidden = _ishidden
 
 
-def _config_home():
-    """Calculate our config_home"""
-    xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
-    if not xdg_config_home:
-        xdg_config_home = os.path.expanduser("~/.config")
-    return os.path.join(xdg_config_home, "dots")
+class Config:
+    def __init__(self):
+        name = "dots"
+        xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
+        if not xdg_config_home:
+            xdg_config_home = os.path.expanduser("~/.config")
 
+        self.dir = os.path.join(xdg_config_home, name)
+        self.config = {}
 
-def _config_load(name):
-    """Load a config file from our config_home, or return an empty dict"""
-    confdir = _config_home()
-    try:
-        f = open(os.path.join(confdir, name))
-        return yaml.safe_load(f)
-    except FileNotFoundError:
-        return {}
+    def load(self, name):
+        """Try to load a config file from our dir"""
 
+        if self.config:
+            raise ValueError("Cannot load config twice")
 
-def _config_save(name, config):
-    """Save the config file to our config_home"""
-    confdir = _config_home()
-    os.makedirs(confdir, exist_ok=True)
-    f = open(os.path.join(confdir, name), "w")
-    print("# Automatically written file, edit with care", file=f)
-    yaml.safe_dump(
-        config,
-        stream=f,
-        explicit_start=True,
-        explicit_end=True,
-        default_flow_style=False,
-    )
+        try:
+            f = open(os.path.join(self.dir, name))
+            self.config = yaml.safe_load(f)
+        except FileNotFoundError:
+            pass
+
+    def save(self, name):
+        """Save the config file into our dir"""
+        os.makedirs(self.dir, exist_ok=True)
+        f = open(os.path.join(self.dir, name), "w")
+        print("# Automatically written file, edit with care", file=f)
+        yaml.safe_dump(
+            self.config,
+            stream=f,
+            explicit_start=True,
+            explicit_end=True,
+            default_flow_style=False,
+        )
 
 
 def _source_load(filename):
@@ -307,14 +310,14 @@ def sources_foreach(args, func):
             return
         data[filename] = metadata
 
-    sources = {}
+    c = Config()
     if args.pathname:
         for n in args.pathname:
-            sources[n] = True
+            c.config[n] = True
     else:
-        sources = _config_load(conffile)
+        c.load(conffile)
 
-    for source in sources:
+    for source in c.config:
         if os.path.isfile(source):
             source_append(source)
             continue
@@ -358,14 +361,15 @@ def subc_add(args):
     """Add a new file or directory to the list of managed sources"""
     conffile = "sources.yml"  # FIXME dry
 
-    sources = _config_load(conffile)
+    c = Config()
+    c.load(conffile)
     for name in args.pathname:
         name = os.path.expanduser(name)
         name = os.path.realpath(name)
         if not os.path.exists(name):
             raise ValueError(f"{name} does not exist")
-        sources[name] = True
-    _config_save(conffile, sources)
+        c.config[name] = True
+    c.save(conffile)
 
 
 @CLI("install", arg="pathname")
