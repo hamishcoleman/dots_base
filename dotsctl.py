@@ -138,8 +138,25 @@ class ActionSource(ActionBase):
     def __str__(self):
         return f"# source {self.filename}"
 
-    def log(self, filename):
-        pass
+
+class ActionDpkg(ActionBase):
+    def __init__(self, package):
+        super().__init__()
+        self.package = package
+
+    def __str__(self):
+        return f"# sudo apt-get install {self.package}"
+
+    @classmethod
+    def from_metadata(cls, metadata):
+        if not isinstance(metadata, list):
+            metadata = [metadata]
+
+        actions = []
+        for package in metadata:
+            actions += [cls(package)]
+
+        return actions
 
 
 class ActionMkdir(ActionBase):
@@ -228,6 +245,9 @@ def parse_metadata(args, filename, metadata):
 
     # TODO:
     # optionally check required packages
+
+    if "dpkg" in metadata:
+        actions += ActionDpkg.from_metadata(metadata['dpkg'])
 
     if "mkdir" in metadata:
         actions += ActionMkdir.from_metadata(metadata['mkdir'])
