@@ -214,33 +214,7 @@ class ActionSymlink(ActionBase):
         return actions
 
 
-def install_mkdir(metadata):
-    """Create one or more directories"""
-
-    actions = ActionMkdir.from_metadata(metadata)
-    for action in actions:
-        action.act()
-    return actions
-
-
-def install_symlink_one(target, linkpath):
-    """Install the dotfile as a symlink"""
-    actions = ActionSymlink.from_metadata({linkpath: target})
-    for action in actions:
-        action.act()
-    return actions
-
-
-def install_symlink(data):
-    """Create one or more symlinks from a dict of dest: target pairs"""
-
-    actions = ActionSymlink.from_metadata(data)
-    for action in actions:
-        action.act()
-    return actions
-
-
-def install_one(args, filename, metadata):
+def parse_metadata(args, filename, metadata):
     """Find and process install instructions for one file"""
 
     actions = []
@@ -249,11 +223,11 @@ def install_one(args, filename, metadata):
     # optionally check required packages
 
     if "mkdir" in metadata:
-        actions += install_mkdir(metadata['mkdir'])
+        actions += ActionMkdir.from_metadata(metadata['mkdir'])
 
     if "symlink" in metadata:
         # Install a generic symlink, unrelated to the current filename
-        actions += install_symlink(metadata["symlink"])
+        actions += ActionSymlink.from_metadata(metadata["symlink"])
 
     if "destdir" in metadata:
         # The destination is calculated from a dir name
@@ -273,7 +247,7 @@ def install_one(args, filename, metadata):
     if "dotsctl" in metadata:
         basedir = os.path.dirname(filename)
         for this_name, this_meta in sorted(metadata["dotsctl"].items()):
-            actions += install_one(
+            actions += parse_metadata(
                 args,
                 os.path.join(basedir, this_name),
                 this_meta
@@ -312,7 +286,7 @@ def install_one(args, filename, metadata):
             # copy to dest:  install_copy()
             # copy to archive:  install_toarchivedir()
 
-            actions += install_symlink_one(src_rel, dest)
+            actions += ActionSymlink.from_metadata({dest: src_rel})
 
     return actions
 
@@ -396,8 +370,10 @@ def subc_add(args):
 @CLI("install", arg="pathname")
 def subc_install(args):
     """Install all managed sources or optionally specify just one adhoc file"""
-    actions = sources_foreach(args, install_one)
+    actions = sources_foreach(args, parse_metadata)
 
+    for action in actions:
+        action.act()
     if args.debug:
         for action in actions:
             print(action)
