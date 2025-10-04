@@ -172,10 +172,46 @@ class ActionMkdir(ActionBase):
 class ActionSymlink(ActionBase):
     def __init__(self, target, link_name):
         self.target = target
-        self.link_name = link_name
+        self.link_name = os.path.expanduser(link_name)
 
     def __str__(self):
         return f"ln -s {self.target} {self.link_name}"
+
+    def act(self):
+        try:
+            stat = os.lstat(self.link_name)
+        except FileNotFoundError:
+            stat = None
+
+        # TOCTOU race condition!
+
+        if stat:
+            if os.path.stat.S_ISREG(stat.st_mode):
+                print(f"Error: will not overwrite file {self.link_name}")
+                return
+            if os.path.stat.S_ISLNK(stat.st_mode):
+                orig_target = os.readlink(self.link_name)
+                if orig_target == self.target:
+                    # dont report making changes if there are none
+                    return
+            else:
+                # Dont know how to handle the type we are trying to overwrite
+                raise NotImplementedError("Unknown existing file type")
+
+            os.unlink(self.link_name)
+
+        log("SYMLINK", self.link_name)
+        os.symlink(self.target, self.link_name)
+
+    @classmethod
+    def from_metadata(cls, metadata):
+        actions = []
+        for linkpath, target in metadata.items():
+            destdir = os.path.dirname(linkpath)
+            actions += [ActionMkdir(destdir)]
+            actions += [cls(target, linkpath)]
+
+        return actions
 
 
 def install_mkdir(metadata):
@@ -189,44 +225,18 @@ def install_mkdir(metadata):
 
 def install_symlink_one(target, linkpath):
     """Install the dotfile as a symlink"""
-    actions = []
-    destdir = os.path.dirname(linkpath)
-    actions += install_mkdir(destdir)
-    actions += [ActionSymlink(target, linkpath)]
-
-    try:
-        stat = os.lstat(linkpath)
-    except FileNotFoundError:
-        stat = None
-
-    # TOCTOU race condition!
-
-    if stat:
-        if os.path.stat.S_ISREG(stat.st_mode):
-            print(f"Error: will not overwrite regular file {linkpath}")
-            return actions
-        if os.path.stat.S_ISLNK(stat.st_mode):
-            orig_target = os.readlink(linkpath)
-            if orig_target == target:
-                # dont report making changes if there are none
-                return actions
-        else:
-            # Dont know how to handle the type we are trying to overwrite
-            raise NotImplementedError("Unknown existing file type")
-
-        os.unlink(linkpath)
-
-    log("SYMLINK", linkpath)
-    os.symlink(target, linkpath)
+    actions = ActionSymlink.from_metadata({linkpath: target})
+    for action in actions:
+        action.act()
     return actions
 
 
 def install_symlink(data):
     """Create one or more symlinks from a dict of dest: target pairs"""
-    actions = []
-    for linkpath, target in data.items():
-        linkpath = os.path.expanduser(linkpath)
-        actions += install_symlink_one(target, linkpath)
+
+    actions = ActionSymlink.from_metadata(data)
+    for action in actions:
+        action.act()
     return actions
 
 
