@@ -382,12 +382,10 @@ def subc_install(args):
     for action in actions:
         if args.verbose:
             action.verbose = True
-
-        action.act()
-
-    if args.debug:
-        for action in actions:
+        if args.debug:
             print(action)
+        if not args.dry_run:
+            action.act()
 
 
 @CLI("debug_meta", arg="pathname")
@@ -450,8 +448,12 @@ def argparser():
         action='store_true', default=False,
         help="Set verbose output",
     )
+    args.add_argument(
+        "-n", "--dry-run",
+        action='store_true', default=False,
+        help="Make no changes",
+    )
     # quiet?
-    # dry run
     # dest dir
 
     subc = args.add_subparsers(
