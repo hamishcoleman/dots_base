@@ -427,6 +427,8 @@ def subc_packages_list(args):
 
         if distro.id() == 'debian':
             packages_key = "dpkg"
+        elif distro.id() == 'ubuntu':
+            packages_key = "dpkg"
         elif distro.id() == 'raspbian':
             # Gah, this is much annoyance
             packages_key = "dpkg"
