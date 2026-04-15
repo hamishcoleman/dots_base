@@ -274,9 +274,13 @@ def parse_metadata(args, filename, metadata):
     if "dotsctl" in metadata:
         basedir = os.path.dirname(filename)
         for this_name, this_meta in sorted(metadata["dotsctl"].items()):
+            this_name = os.path.expanduser(this_name)
+            if not this_name.startswith("/"):
+                this_name = os.path.join(basedir, this_name)
+
             actions += parse_metadata(
                 args,
-                os.path.join(basedir, this_name),
+                this_name,
                 this_meta
             )
 
