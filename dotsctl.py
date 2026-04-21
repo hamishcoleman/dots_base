@@ -105,6 +105,8 @@ def _source_load(filename):
         lines.append(line)
         if line == "...":
             break
+        if len(lines) > 100:
+            raise ValueError(f"long header or missing end in {filename}")
 
     metadata = yaml.safe_load(io.StringIO("\n".join(lines)))
     return metadata
