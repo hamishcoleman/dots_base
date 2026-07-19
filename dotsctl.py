@@ -366,25 +366,6 @@ def sources_foreach(args, func):
     return results
 
 
-subc_list = {}
-
-
-def CLI(action, **kwargs):
-    def wrap(f):
-        entry = {
-            "func": f,
-            "help": f.__doc__,
-        }
-        entry.update(kwargs)
-
-        if action in subc_list:
-            raise ValueError(f"Duplicate action {action}")
-        subc_list[action] = entry
-        return f
-    return wrap
-
-
-@CLI("add", arg="pathname")
 def subc_add(args):
     """Add a new file or directory to the list of managed sources"""
     conffile = "sources.yml"  # FIXME dry
@@ -400,7 +381,6 @@ def subc_add(args):
     c.save(conffile)
 
 
-@CLI("install", arg="pathname")
 def subc_install(args):
     """Install all managed sources or optionally specify just one adhoc file"""
     actions = sources_foreach(args, parse_metadata)
@@ -414,7 +394,6 @@ def subc_install(args):
             action.act()
 
 
-@CLI("debug_meta", arg="pathname")
 def subc_debug_meta(args):
     """Dump the discovered metadata"""
     def debug_meta(args, filename, metadata):
@@ -425,7 +404,6 @@ def subc_debug_meta(args):
     sources_foreach(args, debug_meta)
 
 
-@CLI("packages_list", arg="pathname")
 def subc_packages_list(args):
     """Show the list of package names needed"""
     try:
@@ -461,6 +439,41 @@ def subc_packages_list(args):
         print(i)
 
 
+def argparser_subc(args, subc_list):
+    subc = args.add_subparsers(
+        dest="command",
+        help="Command",
+    )
+
+    for name, data in sorted(subc_list.items()):
+        if "func" in data:
+            help = data["func"].__doc__
+        elif "help" in data:
+            help = data["help"]
+        else:
+            help = None
+        cmd = subc.add_parser(name, help=help)
+
+        if "func" in data:
+            func = data["func"]
+            cmd.set_defaults(func=func)
+
+            arg = False
+            if "arg" in data and data["arg"]:
+                arg = data["arg"]
+
+            if arg:
+                cmd.add_argument(
+                    arg,
+                    nargs="*",
+                    # help
+                    # type
+                )
+
+            if "subc" in data:
+                argparser_subc(cmd, data["subc"])
+
+
 def argparser():
     args = argparse.ArgumentParser(
         description=globals()["__doc__"],
@@ -484,21 +497,26 @@ def argparser():
     # quiet?
     # dest dir
 
-    subc = args.add_subparsers(
-        dest="command",
-        help="Command",
-    )
+    subc_list = {
+        "add": {
+            "func": subc_add,
+            "arg": "pathname",
+        },
+        "debug_meta": {
+            "func": subc_debug_meta,
+            "arg": "pathname",
+        },
+        "install": {
+            "func": subc_install,
+            "arg": "pathname",
+        },
+        "packages_list": {
+            "func": subc_packages_list,
+            "arg": "pathname",
+        },
+    }
 
-    for name, data in sorted(subc_list.items()):
-        func = data["func"]
-        arg = False
-        if "arg" in data and data["arg"]:
-            arg = data["arg"]
-
-        cmd = subc.add_parser(name, help=data["help"])
-        cmd.set_defaults(func=func)
-        if arg:
-            cmd.add_argument(arg, nargs="*")
+    argparser_subc(args, subc_list)
 
     r = args.parse_args()
 
