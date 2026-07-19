@@ -470,8 +470,8 @@ def argparser_subc(args, subc_list):
                     # type
                 )
 
-            if "subc" in data:
-                argparser_subc(cmd, data["subc"])
+        if "subc" in data:
+            argparser_subc(cmd, data["subc"])
 
 
 def argparser():
@@ -502,17 +502,27 @@ def argparser():
             "func": subc_add,
             "arg": "pathname",
         },
-        "debug_meta": {
-            "func": subc_debug_meta,
-            "arg": "pathname",
+        "debug": {
+            "help": "Subcommands for debugging dotsctl metadata",
+            "subc": {
+                "meta": {
+                    "func": subc_debug_meta,
+                    "arg": "pathname",
+                },
+            },
         },
         "install": {
             "func": subc_install,
             "arg": "pathname",
         },
-        "packages_list": {
-            "func": subc_packages_list,
-            "arg": "pathname",
+        "package": {
+            "help": "Subcommands for dealing with packages",
+            "subc": {
+                "list": {
+                    "func": subc_packages_list,
+                    "arg": "pathname",
+                },
+            },
         },
     }
 
@@ -535,6 +545,9 @@ def main():
     if not args.command:
         raise NotImplementedError("No default subcommand")
         # TODO: default
+
+    if not hasattr(args, "func"):
+        raise ValueError("Can not run this subcommand")
 
     result = args.func(args)
     if result is not None:
