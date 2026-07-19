@@ -439,6 +439,29 @@ def subc_packages_list(args):
         print(i)
 
 
+def subc_source_list(args):
+    """Show the list of source_id values"""
+
+    def source_id(args, filename, metadata):
+        return [{filename: metadata.get("source_id", None)}]
+
+    raw = sources_foreach(args, source_id)
+    result = {}
+
+    for i in raw:
+        if i is None:
+            continue
+        if isinstance(i, ActionBase):
+            continue
+
+        result.update(i)
+
+    for filename, source_id in sorted(result.items()):
+        if source_id is None:
+            continue
+        print(filename, source_id)
+
+
 def argparser_subc(args, subc_list):
     subc = args.add_subparsers(
         dest="command",
@@ -520,6 +543,15 @@ def argparser():
             "subc": {
                 "list": {
                     "func": subc_packages_list,
+                    "arg": "pathname",
+                },
+            },
+        },
+        "source": {
+            "help": "Subcommands for dealing with source ids",
+            "subc": {
+                "list": {
+                    "func": subc_source_list,
                     "arg": "pathname",
                 },
             },
