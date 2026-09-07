@@ -409,16 +409,16 @@ def subc_packages_list(args):
     try:
         import distro
 
-        if distro.id() == 'debian':
-            packages_key = "dpkg"
-        elif distro.id() == 'ubuntu':
-            packages_key = "dpkg"
-        elif distro.id() == 'raspbian':
-            # Gah, this is much annoyance
-            packages_key = "dpkg"
-        else:
-            raise NotImplementedError("Unknown distro")
+        distro2key = {
+            "debian": "dpkg",
+            "ubuntu": "dpkg",
+            "raspbian": "dpkg",
+            "pop": "dpkg",
+        }
+        packages_key = distro2key[distro.id()]
 
+    except KeyError:
+        raise NotImplementedError("Unknown distro")
     except ModuleNotFoundError:
         # just guess then
         packages_key = "dpkg"
